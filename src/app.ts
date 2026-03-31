@@ -16,7 +16,11 @@ const app = express();
 
 // ✅ Step 1: Webhook MUST come before express.json()
 // Stripe needs raw Buffer body to verify signature
-app.use("/api/payment/webhook/stripe", PaymentWebhookRouter);
+app.use(
+  "/api/payment/webhook/stripe",
+  express.raw({ type: "application/json" }),
+  PaymentWebhookRouter
+);
 
 // ✅ Step 2: CORS
 app.use(

@@ -14,7 +14,7 @@ const webhookRouter = express.Router();
 
 webhookRouter.post(
   "/",
-  express.raw({ type: "application/json" }), // raw body required for Stripe signature verification
+  express.raw({ type: "application/json" }), 
   PaymentController.stripeWebhook
 );
 

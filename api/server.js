@@ -1626,8 +1626,9 @@ var createPayment = async (customerId, bookingId, method) => {
     cancel_url: `${process.env.FRONTEND_URL}/payment-cancel?bookingId=${booking.id}`,
     metadata: {
       bookingId: booking.id,
+      // important!
       paymentId: payment.id,
-      // ← used in webhook to update the correct record
+      // important!
       customerId
     },
     line_items: [
@@ -1636,43 +1637,29 @@ var createPayment = async (customerId, bookingId, method) => {
         price_data: {
           currency: "usd",
           unit_amount: Math.round(Number(booking.service.price) * 100),
-          // Stripe uses cents
-          product_data: {
-            name: booking.service.title
-          }
+          product_data: { name: booking.service.title }
         }
       }
     ]
   });
+  console.log("\u{1F4CC} Stripe session metadata:", session.metadata);
   return {
     payment,
     url: session.url,
-    // redirect user to this URL to complete payment
     sessionId: session.id
   };
 };
 var getMyPayments = async (customerId) => {
   return prisma.payment.findMany({
     where: { booking: { customerId } },
-    include: {
-      booking: {
-        include: { service: true }
-      }
-    },
+    include: { booking: { include: { service: true } } },
     orderBy: { createdAt: "desc" }
   });
 };
 var getPaymentById = async (customerId, paymentId) => {
   const payment = await prisma.payment.findFirst({
-    where: {
-      id: paymentId,
-      booking: { customerId }
-    },
-    include: {
-      booking: {
-        include: { service: true }
-      }
-    }
+    where: { id: paymentId, booking: { customerId } },
+    include: { booking: { include: { service: true } } }
   });
   if (!payment) throw new Error("Payment not found");
   return payment;
@@ -1789,13 +1776,16 @@ var webhookRouter = express.Router();
 webhookRouter.post(
   "/",
   express.raw({ type: "application/json" }),
-  // raw body required for Stripe signature verification
   PaymentController.stripeWebhook
 );
 
 // src/app.ts
 var app = express2();
-app.use("/api/payment/webhook/stripe", webhookRouter);
+app.use(
+  "/api/payment/webhook/stripe",
+  express2.raw({ type: "application/json" }),
+  webhookRouter
+);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
