@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  ON_THE_WAY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String
+  emailVerified Boolean    @default(false)
+  image         String?
+  role          String      @default("CUSTOMER")
+  isBanned      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  services     Service[]
+   bookings    Booking[]   @relation("CustomerBookings")
+  reviews       Review[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model ServiceCategory {
+  id          String    @id @default(uuid())
+  name        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services    Service[]
+}
+
+model Service {
+  id            String           @id @default(uuid())
+  title         String
+  description   String
+  price         Float
+  image         String?
+  location      String?
+  availability  Boolean          @default(true)
+
+  providerId    String
+  categoryId    String
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  provider      User             @relation(fields: [providerId], references: [id])
+  category      ServiceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  bookings      Booking[]
+  reviews       Review[]
+
+  @@index([providerId])
+  @@index([categoryId])
+}
+
+model Booking {
+  id             String         @id @default(uuid())
+  customerId     String
+  serviceId       String
+  providerId      String
+  date            DateTime
+  address         String
+  phone           String
+  bookingStatus   BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  customer        User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  service         Service       @relation(fields: [serviceId], references: [id])
+  payment         Payment?
+
+  @@index([customerId])
+  @@index([serviceId])
+  @@index([providerId])
+}
+model Payment {
+  id             String         @id @default(uuid())
+  bookingId      String         @unique
+  amount         Float
+  method         String
+  transactionId  String?
+  status         PaymentStatus  @default(PENDING)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  booking        Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+model Review {
+  id          String    @id @default(cuid())
+  customerId  String
+  serviceId   String   // must reference an existing Service.id
+  rating      Int
+  comment     String
+  createdAt   DateTime  @default(now())
+
+  customer    User      @relation(fields: [customerId], references: [id])
+  service     Service   @relation(fields: [serviceId], references: [id])
+
+  @@index([customerId])
+  @@index([serviceId])
+}
