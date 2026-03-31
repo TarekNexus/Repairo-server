@@ -29,8 +29,8 @@ var config = {
 };
 config.runtimeDataModel = JSON.parse('{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"emailVerified","kind":"scalar","type":"Boolean"},{"name":"image","kind":"scalar","type":"String"},{"name":"role","kind":"scalar","type":"String"},{"name":"isBanned","kind":"scalar","type":"Boolean"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"sessions","kind":"object","type":"Session","relationName":"SessionToUser"},{"name":"accounts","kind":"object","type":"Account","relationName":"AccountToUser"},{"name":"services","kind":"object","type":"Service","relationName":"ServiceToUser"},{"name":"bookings","kind":"object","type":"Booking","relationName":"CustomerBookings"},{"name":"reviews","kind":"object","type":"Review","relationName":"ReviewToUser"}],"dbName":"user"},"Session":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"token","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ipAddress","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"SessionToUser"}],"dbName":"session"},"Account":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"accountId","kind":"scalar","type":"String"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"AccountToUser"},{"name":"accessToken","kind":"scalar","type":"String"},{"name":"refreshToken","kind":"scalar","type":"String"},{"name":"idToken","kind":"scalar","type":"String"},{"name":"accessTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"refreshTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"scope","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"account"},"Verification":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"identifier","kind":"scalar","type":"String"},{"name":"value","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"verification"},"ServiceCategory":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"services","kind":"object","type":"Service","relationName":"ServiceToServiceCategory"}],"dbName":null},"Service":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"title","kind":"scalar","type":"String"},{"name":"description","kind":"scalar","type":"String"},{"name":"price","kind":"scalar","type":"Float"},{"name":"image","kind":"scalar","type":"String"},{"name":"location","kind":"scalar","type":"String"},{"name":"availability","kind":"scalar","type":"Boolean"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"categoryId","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"provider","kind":"object","type":"User","relationName":"ServiceToUser"},{"name":"category","kind":"object","type":"ServiceCategory","relationName":"ServiceToServiceCategory"},{"name":"bookings","kind":"object","type":"Booking","relationName":"BookingToService"},{"name":"reviews","kind":"object","type":"Review","relationName":"ReviewToService"}],"dbName":null},"Booking":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"customerId","kind":"scalar","type":"String"},{"name":"serviceId","kind":"scalar","type":"String"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"date","kind":"scalar","type":"DateTime"},{"name":"address","kind":"scalar","type":"String"},{"name":"phone","kind":"scalar","type":"String"},{"name":"bookingStatus","kind":"enum","type":"BookingStatus"},{"name":"paymentStatus","kind":"enum","type":"PaymentStatus"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"customer","kind":"object","type":"User","relationName":"CustomerBookings"},{"name":"service","kind":"object","type":"Service","relationName":"BookingToService"},{"name":"payment","kind":"object","type":"Payment","relationName":"BookingToPayment"}],"dbName":null},"Payment":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"bookingId","kind":"scalar","type":"String"},{"name":"amount","kind":"scalar","type":"Float"},{"name":"method","kind":"scalar","type":"String"},{"name":"transactionId","kind":"scalar","type":"String"},{"name":"status","kind":"enum","type":"PaymentStatus"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"booking","kind":"object","type":"Booking","relationName":"BookingToPayment"}],"dbName":null},"Review":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"customerId","kind":"scalar","type":"String"},{"name":"serviceId","kind":"scalar","type":"String"},{"name":"rating","kind":"scalar","type":"Int"},{"name":"comment","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"customer","kind":"object","type":"User","relationName":"ReviewToUser"},{"name":"service","kind":"object","type":"Service","relationName":"ReviewToService"}],"dbName":null}},"enums":{},"types":{}}');
 async function decodeBase64AsWasm(wasmBase64) {
-  const { Buffer } = await import("buffer");
-  const wasmArray = Buffer.from(wasmBase64, "base64");
+  const { Buffer: Buffer2 } = await import("buffer");
+  const wasmArray = Buffer2.from(wasmBase64, "base64");
   return new WebAssembly.Module(wasmArray);
 }
 config.compilerWasm = {
@@ -1579,7 +1579,7 @@ router7.get("/my-services", auth_default("PROVIDER" /* PROVIDER */), ProviderCon
 var ProviderRouter = router7;
 
 // src/modules/payment/payment.router.ts
-import express, { Router as Router8 } from "express";
+import express from "express";
 
 // src/modules/payment/payment.service.ts
 import Stripe from "stripe";
@@ -1591,16 +1591,17 @@ var createPayment = async (customerId, bookingId, method) => {
     where: { id: bookingId, customerId },
     include: { service: true, payment: true }
   });
+  console.log("\u{1F4CC} Booking found:", booking?.id);
+  console.log("\u{1F4CC} Existing payment:", booking?.payment);
   if (!booking) throw new Error("Booking not found");
-  if (booking.payment) throw new Error("Payment already exists");
-  if (booking.bookingStatus === "CANCELLED")
-    throw new Error("Cannot pay for cancelled booking");
+  if (booking.payment) throw new Error("Payment already exists for this booking");
+  if (booking.bookingStatus === "CANCELLED") throw new Error("Cannot pay for a cancelled booking");
   if (method === "CASH_ON_DELIVERY") {
-    const payment = await prisma.payment.create({
+    const payment2 = await prisma.payment.create({
       data: {
         bookingId,
         amount: booking.service.price,
-        method,
+        method: "CASH_ON_DELIVERY",
         status: PaymentStatus.PENDING
       }
     });
@@ -1608,62 +1609,9 @@ var createPayment = async (customerId, bookingId, method) => {
       where: { id: bookingId },
       data: { paymentStatus: PaymentStatus.PENDING }
     });
-    return payment;
-  } else if (method === "STRIPE") {
-    await prisma.payment.create({
-      data: {
-        bookingId,
-        amount: booking.service.price,
-        method,
-        status: PaymentStatus.PENDING
-      }
-    });
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      success_url: `${process.env.FRONTEND_URL}/payment-success?bookingId=${booking.id}`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-      metadata: { bookingId: booking.id },
-      // crucial for webhook
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            unit_amount: Math.round(booking.service.price * 100),
-            product_data: { name: booking.service.title }
-          }
-        }
-      ]
-    });
-    return { url: session.url };
+    return payment2;
   }
-};
-var getMyPayments = async (customerId) => {
-  return prisma.payment.findMany({
-    where: { booking: { customerId } },
-    include: {
-      booking: { include: { service: true } }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-};
-var getPaymentById = async (customerId, paymentId) => {
-  const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, booking: { customerId } },
-    include: { booking: { include: { service: true } } }
-  });
-  if (!payment) throw new Error("Payment not found");
-  return payment;
-};
-var createStripeCheckoutSession = async (customerId, bookingId) => {
-  const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, customerId },
-    include: { service: true, payment: true }
-  });
-  if (!booking) throw new Error("Booking not found");
-  if (booking.payment) throw new Error("Payment already exists");
-  await prisma.payment.create({
+  const payment = await prisma.payment.create({
     data: {
       bookingId,
       amount: booking.service.price,
@@ -1675,29 +1623,67 @@ var createStripeCheckoutSession = async (customerId, bookingId) => {
     mode: "payment",
     payment_method_types: ["card"],
     success_url: `${process.env.FRONTEND_URL}/payment-success?bookingId=${booking.id}`,
-    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-    metadata: { bookingId: booking.id },
+    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel?bookingId=${booking.id}`,
+    metadata: {
+      bookingId: booking.id,
+      paymentId: payment.id,
+      // ← used in webhook to update the correct record
+      customerId
+    },
     line_items: [
       {
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: Math.round(booking.service.price * 100),
-          product_data: { name: booking.service.title }
+          unit_amount: Math.round(Number(booking.service.price) * 100),
+          // Stripe uses cents
+          product_data: {
+            name: booking.service.title
+          }
         }
       }
     ]
   });
-  return { url: session.url };
+  return {
+    payment,
+    url: session.url,
+    // redirect user to this URL to complete payment
+    sessionId: session.id
+  };
 };
-var PaymentService = {
-  createPayment,
-  getMyPayments,
-  getPaymentById,
-  createStripeCheckoutSession
+var getMyPayments = async (customerId) => {
+  return prisma.payment.findMany({
+    where: { booking: { customerId } },
+    include: {
+      booking: {
+        include: { service: true }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
 };
+var getPaymentById = async (customerId, paymentId) => {
+  const payment = await prisma.payment.findFirst({
+    where: {
+      id: paymentId,
+      booking: { customerId }
+    },
+    include: {
+      booking: {
+        include: { service: true }
+      }
+    }
+  });
+  if (!payment) throw new Error("Payment not found");
+  return payment;
+};
+var PaymentService = { createPayment, getMyPayments, getPaymentById };
 
 // src/modules/payment/payment.controller.ts
+import Stripe2 from "stripe";
+var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2026-03-25.dahlia"
+});
 var createPayment2 = async (req, res) => {
   try {
     const { bookingId, method } = req.body;
@@ -1707,152 +1693,109 @@ var createPayment2 = async (req, res) => {
         message: "bookingId and method are required"
       });
     }
-    const payment = await PaymentService.createPayment(
-      req.user.id,
-      // authenticated user id
-      bookingId,
-      method
-    );
-    res.status(201).json({
+    const result = await PaymentService.createPayment(req.user.id, bookingId, method);
+    return res.status(201).json({
       success: true,
-      message: method === "CASH_ON_DELIVERY" ? "COD payment created successfully" : "Stripe checkout session created successfully",
-      data: payment
+      message: method === "CASH_ON_DELIVERY" ? "Cash on delivery payment created successfully" : "Stripe checkout session created successfully",
+      data: result
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 var getMyPayments2 = async (req, res) => {
   try {
     const payments = await PaymentService.getMyPayments(req.user.id);
-    res.status(200).json({
-      success: true,
-      data: payments
-    });
+    return res.status(200).json({ success: true, data: payments });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 var getPaymentById2 = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || Array.isArray(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Payment id is required"
-      });
-    }
     const payment = await PaymentService.getPaymentById(req.user.id, id);
-    res.status(200).json({
-      success: true,
-      data: payment
-    });
+    return res.status(200).json({ success: true, data: payment });
   } catch (error) {
-    res.status(404).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(404).json({ success: false, message: error.message });
   }
 };
-var createStripeCheckout = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-    if (!bookingId) {
-      return res.status(400).json({
-        success: false,
-        message: "bookingId is required"
-      });
-    }
-    const session = await PaymentService.createStripeCheckoutSession(
-      req.user.id,
-      bookingId
-    );
-    res.status(200).json({
-      success: true,
-      message: "Stripe checkout session created successfully",
-      data: session
-    });
-  } catch (error) {
-    res.status(400).json({
+var stripeWebhook = async (req, res) => {
+  const signature = req.headers["stripe-signature"];
+  if (!signature) {
+    return res.status(400).json({ success: false, message: "Missing stripe-signature header" });
+  }
+  if (!Buffer.isBuffer(req.body)) {
+    console.error("\u274C req.body is not a Buffer. Make sure express.json() is NOT applied to this route.");
+    return res.status(400).json({
       success: false,
-      message: error.message
+      message: "Webhook Error: Raw body required. Check middleware order in app.ts"
     });
   }
+  let event;
+  try {
+    event = stripe2.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (error) {
+    console.error("\u274C Stripe webhook signature verification failed:", error.message);
+    return res.status(400).json({ success: false, message: `Webhook Error: ${error.message}` });
+  }
+  console.log("\u2705 Stripe webhook event received:", event.type);
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const paymentId = session.metadata?.paymentId;
+      const bookingId = session.metadata?.bookingId;
+      console.log("\u{1F4E6} Metadata \u2014 paymentId:", paymentId, "bookingId:", bookingId);
+      if (!paymentId || !bookingId) {
+        console.error("\u274C Missing metadata in Stripe session");
+        return res.status(400).json({ success: false, message: "Missing metadata in session" });
+      }
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.PAID,
+          transactionId: String(session.payment_intent)
+        }
+      });
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { paymentStatus: PaymentStatus.PAID }
+      });
+      console.log("\u2705 Payment and booking updated to PAID");
+    }
+  } catch (error) {
+    console.error("\u274C Database update failed:", error.message);
+    return res.status(200).json({ received: true, warning: "DB update failed" });
+  }
+  return res.status(200).json({ received: true });
 };
 var PaymentController = {
   createPayment: createPayment2,
   getMyPayments: getMyPayments2,
   getPaymentById: getPaymentById2,
-  createStripeCheckout
-};
-
-// src/modules/payment/payment.webhook.ts
-import Stripe2 from "stripe";
-var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2026-03-25.dahlia"
-});
-var stripeWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  let event;
-  try {
-    event = stripe2.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed.", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const bookingId = session.metadata?.bookingId;
-    if (!bookingId) {
-      return res.status(400).send("Booking ID not found in metadata");
-    }
-    await prisma.payment.updateMany({
-      where: { bookingId },
-      data: { status: PaymentStatus.PAID }
-    });
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentStatus: PaymentStatus.PAID }
-    });
-    console.log(`Payment for booking ${bookingId} completed.`);
-  }
-  res.status(200).json({ received: true });
+  stripeWebhook
 };
 
 // src/modules/payment/payment.router.ts
-var router8 = Router8();
-router8.post(
-  "/stripe-checkout",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  PaymentController.createStripeCheckout
-);
-router8.post(
+var router8 = express.Router();
+router8.post("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.createPayment);
+router8.get("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getMyPayments);
+router8.get("/:id", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getPaymentById);
+var webhookRouter = express.Router();
+webhookRouter.post(
   "/",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  PaymentController.createPayment
+  express.raw({ type: "application/json" }),
+  // raw body required for Stripe signature verification
+  PaymentController.stripeWebhook
 );
-router8.get(
-  "/",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  PaymentController.getMyPayments
-);
-router8.get(
-  "/:id",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  PaymentController.getPaymentById
-);
-router8.post("/webhook", express.raw({ type: "application/json" }), stripeWebhook);
-var PaymentRouter = router8;
 
 // src/app.ts
 var app = express2();
+app.use("/api/payment/webhook/stripe", webhookRouter);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -1871,7 +1814,7 @@ app.use("/api/bookings", BookingRouter);
 app.use("/api/reviews", ReviewRouter);
 app.use("/api/provider", ProviderRouter);
 app.use("/api/users", userRouter);
-app.use("/api/payment", PaymentRouter);
+app.use("/api/payment", router8);
 var app_default = app;
 
 // src/server.ts

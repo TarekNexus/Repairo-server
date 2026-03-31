@@ -1,0 +1,1 @@
+export type PaymentMethod = "CASH_ON_DELIVERY" | "STRIPE";

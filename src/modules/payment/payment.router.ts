@@ -1,37 +1,21 @@
-// src/modules/payment/payment.routes.ts
-import express, { Router } from "express";
-import auth, { UserRole } from "../../middleware/auth";
+import express from "express";
 import { PaymentController } from "./payment.controller";
-import { stripeWebhook } from "./payment.webhook";
+import auth, { UserRole } from "../../middleware/auth";
 
-const router = Router();
+// Standard router — uses parsed JSON body via global express.json()
+const router = express.Router();
 
-// User endpoints
-router.post(
-  "/stripe-checkout",
-  auth(UserRole.CUSTOMER),
-  PaymentController.createStripeCheckout
-);
+router.post("/", auth(UserRole.CUSTOMER), PaymentController.createPayment);
+router.get("/", auth(UserRole.CUSTOMER), PaymentController.getMyPayments);
+router.get("/:id", auth(UserRole.CUSTOMER), PaymentController.getPaymentById);
 
-router.post(
+// Webhook router — uses raw body, no auth middleware
+const webhookRouter = express.Router();
+
+webhookRouter.post(
   "/",
-  auth(UserRole.CUSTOMER),
-  PaymentController.createPayment
+  express.raw({ type: "application/json" }), // raw body required for Stripe signature verification
+  PaymentController.stripeWebhook
 );
 
-router.get(
-  "/",
-  auth(UserRole.CUSTOMER),
-  PaymentController.getMyPayments
-);
-
-router.get(
-  "/:id",
-  auth(UserRole.CUSTOMER),
-  PaymentController.getPaymentById
-);
-
-// Stripe webhook
-router.post("/webhook", express.raw({ type: "application/json" }), stripeWebhook);
-
-export const PaymentRouter = router;
+export { router as PaymentRouter, webhookRouter as PaymentWebhookRouter };
