@@ -1,50 +1,46 @@
 import Stripe from "stripe";
 import { prisma } from "../../lib/prisma";
 import { PaymentStatus } from "../../generated/prisma/browser";
-import { PaymentMethod } from "./payment.interface";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-03-25.dahlia",
 });
 
-const createPayment = async (
-  customerId: string,
-  bookingId: string,
-  method: PaymentMethod
-) => {
-  // 1️⃣ Find booking and validate
+const getBooking = async (customerId: string, bookingId: string) => {
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, customerId },
     include: { service: true, payment: true },
   });
-  console.log("📌 Booking found:", booking?.id);
-  console.log("📌 Existing payment:", booking?.payment);
 
   if (!booking) throw new Error("Booking not found");
   if (booking.payment) throw new Error("Payment already exists for this booking");
-  if (booking.bookingStatus === "CANCELLED") throw new Error("Cannot pay for a cancelled booking");
 
-  // 2️⃣ CASH ON DELIVERY
-  if (method === "CASH_ON_DELIVERY") {
-    const payment = await prisma.payment.create({
-      data: {
-        bookingId,
-        amount: booking.service.price,
-        method: "CASH_ON_DELIVERY",
-        status: PaymentStatus.PENDING,
-      },
-    });
+  return booking;
+};
 
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentStatus: PaymentStatus.PENDING },
-    });
+const createCashOnDeliveryPayment = async (customerId: string, bookingId: string) => {
+  const booking = await getBooking(customerId, bookingId);
 
-    return payment;
-  }
+  const payment = await prisma.payment.create({
+    data: {
+      bookingId,
+      amount: booking.service.price,
+      method: "CASH_ON_DELIVERY",
+      status: PaymentStatus.PENDING,
+    },
+  });
 
-  // 3️⃣ STRIPE
-  // Create pending payment record first
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { paymentStatus: PaymentStatus.PENDING },
+  });
+
+  return payment;
+};
+
+const createStripeCheckout = async (customerId: string, bookingId: string) => {
+  const booking = await getBooking(customerId, bookingId);
+
   const payment = await prisma.payment.create({
     data: {
       bookingId,
@@ -54,37 +50,31 @@ const createPayment = async (
     },
   });
 
-const session = await stripe.checkout.sessions.create({
-  mode: "payment",
-  payment_method_types: ["card"],
-  success_url: `${process.env.FRONTEND_URL}/payment-success?bookingId=${booking.id}`,
-  cancel_url: `${process.env.FRONTEND_URL}/payment-cancel?bookingId=${booking.id}`,
-  metadata: {
-    bookingId: booking.id,     // important!
-    paymentId: payment.id,     // important!
-    customerId: customerId,
-  },
-  line_items: [
-    {
-      quantity: 1,
-      price_data: {
-        currency: "usd",
-        unit_amount: Math.round(Number(booking.service.price) * 100),
-        product_data: { name: booking.service.title },
-      },
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    success_url: `${process.env.FRONTEND_URL}/payment-success?bookingId=${booking.id}`,
+    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel?bookingId=${booking.id}`,
+    metadata: {
+      bookingId: booking.id,
+      paymentId: payment.id,
+      customerId,
     },
-  ],
-});
-  console.log("📌 Stripe session metadata:", session.metadata);
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: Math.round(Number(booking.service.price) * 100),
+          product_data: { name: booking.service.title },
+        },
+      },
+    ],
+  });
 
-  return {
-    payment,
-    url: session.url,
-    sessionId: session.id,
-  };
+  return { payment, sessionId: session.id, url: session.url };
 };
 
-// ✅ Get all payments for a customer
 const getMyPayments = async (customerId: string) => {
   return prisma.payment.findMany({
     where: { booking: { customerId } },
@@ -93,14 +83,19 @@ const getMyPayments = async (customerId: string) => {
   });
 };
 
-// ✅ Get single payment by ID
-const getPaymentById = async (customerId: string, paymentId: string) => {
-  const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, booking: { customerId } },
+const getPaymentById = async (paymentId: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
     include: { booking: { include: { service: true } } },
   });
+
   if (!payment) throw new Error("Payment not found");
   return payment;
 };
 
-export const PaymentService = { createPayment, getMyPayments, getPaymentById };
+export const PaymentService = {
+  createCashOnDeliveryPayment,
+  createStripeCheckout,
+  getMyPayments,
+  getPaymentById,
+};

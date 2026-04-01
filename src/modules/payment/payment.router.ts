@@ -1,21 +1,20 @@
 import express from "express";
-import { PaymentController } from "./payment.controller";
 import auth, { UserRole } from "../../middleware/auth";
+import { PaymentController } from "./payment.controller";
 
-// Standard router — uses parsed JSON body via global express.json()
-const router = express.Router();
+const PaymentRouter = express.Router();
 
-router.post("/", auth(UserRole.CUSTOMER), PaymentController.createPayment);
-router.get("/", auth(UserRole.CUSTOMER), PaymentController.getMyPayments);
-router.get("/:id", auth(UserRole.CUSTOMER), PaymentController.getPaymentById);
+// Unified Payment (COD or Stripe)
+PaymentRouter.post("/create", auth(UserRole.CUSTOMER), PaymentController.createPayment);
 
-// Webhook router — uses raw body, no auth middleware
-const webhookRouter = express.Router();
+// Get My Payments
+PaymentRouter.get("/", auth(UserRole.CUSTOMER), PaymentController.getMyPayments);
 
-webhookRouter.post(
-  "/",
-  express.raw({ type: "application/json" }), 
-  PaymentController.stripeWebhook
-);
+// Get Payment by ID
+PaymentRouter.get("/:id", auth(UserRole.CUSTOMER), PaymentController.getPaymentById);
 
-export { router as PaymentRouter, webhookRouter as PaymentWebhookRouter };
+// Webhook
+const PaymentWebhookRouter = express.Router();
+PaymentWebhookRouter.post("/stripe", express.raw({ type: "application/json" }), PaymentController.stripeWebhook);
+
+export { PaymentRouter, PaymentWebhookRouter };

@@ -1586,31 +1586,33 @@ import Stripe from "stripe";
 var stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2026-03-25.dahlia"
 });
-var createPayment = async (customerId, bookingId, method) => {
+var getBooking = async (customerId, bookingId) => {
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, customerId },
     include: { service: true, payment: true }
   });
-  console.log("\u{1F4CC} Booking found:", booking?.id);
-  console.log("\u{1F4CC} Existing payment:", booking?.payment);
   if (!booking) throw new Error("Booking not found");
   if (booking.payment) throw new Error("Payment already exists for this booking");
-  if (booking.bookingStatus === "CANCELLED") throw new Error("Cannot pay for a cancelled booking");
-  if (method === "CASH_ON_DELIVERY") {
-    const payment2 = await prisma.payment.create({
-      data: {
-        bookingId,
-        amount: booking.service.price,
-        method: "CASH_ON_DELIVERY",
-        status: PaymentStatus.PENDING
-      }
-    });
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentStatus: PaymentStatus.PENDING }
-    });
-    return payment2;
-  }
+  return booking;
+};
+var createCashOnDeliveryPayment = async (customerId, bookingId) => {
+  const booking = await getBooking(customerId, bookingId);
+  const payment = await prisma.payment.create({
+    data: {
+      bookingId,
+      amount: booking.service.price,
+      method: "CASH_ON_DELIVERY",
+      status: PaymentStatus.PENDING
+    }
+  });
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { paymentStatus: PaymentStatus.PENDING }
+  });
+  return payment;
+};
+var createStripeCheckout = async (customerId, bookingId) => {
+  const booking = await getBooking(customerId, bookingId);
   const payment = await prisma.payment.create({
     data: {
       bookingId,
@@ -1626,9 +1628,7 @@ var createPayment = async (customerId, bookingId, method) => {
     cancel_url: `${process.env.FRONTEND_URL}/payment-cancel?bookingId=${booking.id}`,
     metadata: {
       bookingId: booking.id,
-      // important!
       paymentId: payment.id,
-      // important!
       customerId
     },
     line_items: [
@@ -1642,12 +1642,7 @@ var createPayment = async (customerId, bookingId, method) => {
       }
     ]
   });
-  console.log("\u{1F4CC} Stripe session metadata:", session.metadata);
-  return {
-    payment,
-    url: session.url,
-    sessionId: session.id
-  };
+  return { payment, sessionId: session.id, url: session.url };
 };
 var getMyPayments = async (customerId) => {
   return prisma.payment.findMany({
@@ -1656,147 +1651,119 @@ var getMyPayments = async (customerId) => {
     orderBy: { createdAt: "desc" }
   });
 };
-var getPaymentById = async (customerId, paymentId) => {
-  const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, booking: { customerId } },
+var getPaymentById = async (paymentId) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
     include: { booking: { include: { service: true } } }
   });
   if (!payment) throw new Error("Payment not found");
   return payment;
 };
-var PaymentService = { createPayment, getMyPayments, getPaymentById };
+var PaymentService = {
+  createCashOnDeliveryPayment,
+  createStripeCheckout,
+  getMyPayments,
+  getPaymentById
+};
+
+// src/modules/payment/payment.webhook.ts
+import Stripe2 from "stripe";
+var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" });
+var stripeWebhook = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  if (!sig) return res.status(400).send("Missing stripe-signature");
+  if (!Buffer.isBuffer(req.body)) return res.status(400).send("Raw body required");
+  let event;
+  try {
+    event = stripe2.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const paymentId = session.metadata?.paymentId?.toString();
+    const bookingId = session.metadata?.bookingId?.toString();
+    if (paymentId && bookingId) {
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: { status: PaymentStatus.PAID, transactionId: String(session.payment_intent) }
+      });
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { paymentStatus: PaymentStatus.PAID }
+      });
+      console.log(`\u2705 Payment ${paymentId} and Booking ${bookingId} updated to PAID`);
+    }
+  }
+  res.status(200).json({ received: true });
+};
 
 // src/modules/payment/payment.controller.ts
-import Stripe2 from "stripe";
-var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2026-03-25.dahlia"
-});
-var createPayment2 = async (req, res) => {
+var createPayment = async (req, res) => {
   try {
     const { bookingId, method } = req.body;
-    if (!bookingId || !method) {
-      return res.status(400).json({
-        success: false,
-        message: "bookingId and method are required"
+    if (!bookingId || !method) throw new Error("bookingId and method are required");
+    let result;
+    if (method === "CASH_ON_DELIVERY") {
+      result = await PaymentService.createCashOnDeliveryPayment(req.user.id, bookingId);
+      return res.status(201).json({
+        success: true,
+        message: "Cash on Delivery payment created successfully",
+        data: result
       });
+    } else if (method === "STRIPE") {
+      result = await PaymentService.createStripeCheckout(req.user.id, bookingId);
+      return res.status(201).json({
+        success: true,
+        message: "Stripe checkout session created successfully",
+        data: result
+      });
+    } else {
+      throw new Error("Invalid payment method");
     }
-    const result = await PaymentService.createPayment(req.user.id, bookingId, method);
-    return res.status(201).json({
-      success: true,
-      message: method === "CASH_ON_DELIVERY" ? "Cash on delivery payment created successfully" : "Stripe checkout session created successfully",
-      data: result
-    });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
   }
 };
 var getMyPayments2 = async (req, res) => {
   try {
-    const payments = await PaymentService.getMyPayments(req.user.id);
-    return res.status(200).json({ success: true, data: payments });
+    const result = await PaymentService.getMyPayments(req.user.id);
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 var getPaymentById2 = async (req, res) => {
   try {
-    const { id } = req.params;
-    const payment = await PaymentService.getPaymentById(req.user.id, id);
-    return res.status(200).json({ success: true, data: payment });
+    const result = await PaymentService.getPaymentById(req.params.id);
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
-    return res.status(404).json({ success: false, message: error.message });
+    res.status(404).json({ success: false, message: error.message });
   }
-};
-var stripeWebhook = async (req, res) => {
-  const signature = req.headers["stripe-signature"];
-  if (!signature) {
-    return res.status(400).json({ success: false, message: "Missing stripe-signature header" });
-  }
-  if (!Buffer.isBuffer(req.body)) {
-    console.error("\u274C req.body is not a Buffer. Make sure express.json() is NOT applied to this route.");
-    return res.status(400).json({
-      success: false,
-      message: "Webhook Error: Raw body required. Check middleware order in app.ts"
-    });
-  }
-  let event;
-  try {
-    event = stripe2.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (error) {
-    console.error("\u274C Stripe webhook signature verification failed:", error.message);
-    return res.status(400).json({ success: false, message: `Webhook Error: ${error.message}` });
-  }
-  console.log("\u2705 Stripe webhook event received:", event.type);
-  try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const paymentId = session.metadata?.paymentId;
-      const bookingId = session.metadata?.bookingId;
-      console.log("\u{1F4E6} Metadata \u2014 paymentId:", paymentId, "bookingId:", bookingId);
-      if (!paymentId || !bookingId) {
-        console.error("\u274C Missing metadata in Stripe session");
-        return res.status(400).json({ success: false, message: "Missing metadata in session" });
-      }
-      await prisma.payment.update({
-        where: { id: paymentId },
-        data: {
-          status: PaymentStatus.PAID,
-          transactionId: String(session.payment_intent)
-        }
-      });
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { paymentStatus: PaymentStatus.PAID }
-      });
-      console.log("\u2705 Payment and booking updated to PAID");
-    }
-  } catch (error) {
-    console.error("\u274C Database update failed:", error.message);
-    return res.status(200).json({ received: true, warning: "DB update failed" });
-  }
-  return res.status(200).json({ received: true });
 };
 var PaymentController = {
-  createPayment: createPayment2,
+  createPayment,
   getMyPayments: getMyPayments2,
   getPaymentById: getPaymentById2,
   stripeWebhook
 };
 
 // src/modules/payment/payment.router.ts
-var router8 = express.Router();
-router8.post("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.createPayment);
-router8.get("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getMyPayments);
-router8.get("/:id", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getPaymentById);
-var webhookRouter = express.Router();
-webhookRouter.post(
-  "/",
-  express.raw({ type: "application/json" }),
-  PaymentController.stripeWebhook
-);
+var PaymentRouter = express.Router();
+PaymentRouter.post("/create", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.createPayment);
+PaymentRouter.get("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getMyPayments);
+PaymentRouter.get("/:id", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getPaymentById);
+var PaymentWebhookRouter = express.Router();
+PaymentWebhookRouter.post("/stripe", express.raw({ type: "application/json" }), PaymentController.stripeWebhook);
 
 // src/app.ts
 var app = express2();
-app.use(
-  "/api/payment/webhook/stripe",
-  express2.raw({ type: "application/json" }),
-  webhookRouter
-);
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
-  })
-);
+app.use("/api/payment/webhook", express2.raw({ type: "application/json" }), PaymentWebhookRouter);
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express2.json());
-app.get("/", (req, res) => {
-  res.json({ message: "Repairo server is running!" });
-});
+app.get("/", (req, res) => res.status(200).json({ success: true, message: "Repairo server is running!" }));
 app.use("/api/admin", AdminRouter);
 app.use("/api/customer", CustomerRouter);
 app.use("/api/services", serviceRouter);
@@ -1804,7 +1771,7 @@ app.use("/api/bookings", BookingRouter);
 app.use("/api/reviews", ReviewRouter);
 app.use("/api/provider", ProviderRouter);
 app.use("/api/users", userRouter);
-app.use("/api/payment", router8);
+app.use("/api/payment", PaymentRouter);
 var app_default = app;
 
 // src/server.ts

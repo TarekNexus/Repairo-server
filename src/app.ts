@@ -14,34 +14,23 @@ import { PaymentRouter, PaymentWebhookRouter } from "./modules/payment/payment.r
 
 const app = express();
 
-// ✅ Step 1: Webhook MUST come before express.json()
-// Stripe needs raw Buffer body to verify signature
-app.use(
-  "/api/payment/webhook/stripe",
-  express.raw({ type: "application/json" }),
-  PaymentWebhookRouter
-);
+// Stripe Webhook must come BEFORE JSON parser
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }), PaymentWebhookRouter);
 
-// ✅ Step 2: CORS
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL!,
-    credentials: true,
-  })
-);
 
-// ✅ Step 3: Better Auth handler
+// CORS
+app.use(cors({ origin: process.env.FRONTEND_URL!, credentials: true }));
+
+// Better Auth
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
-// ✅ Step 4: Global JSON parser (comes AFTER webhook)
+// JSON parser
 app.use(express.json());
 
-// ✅ Step 5: Health check
-app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "Repairo server is running!" });
-});
+// Health check
+app.get("/", (req: Request, res: Response) => res.status(200).json({ success: true, message: "Repairo server is running!" }));
 
-// ✅ Step 6: All other routes
+// Routes
 app.use("/api/admin", AdminRouter);
 app.use("/api/customer", CustomerRouter);
 app.use("/api/services", serviceRouter);
