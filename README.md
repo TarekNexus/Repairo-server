@@ -1,4 +1,4 @@
-# PharmaPlus 💊
+# PharmaPlus 
 **"Your Trusted Online Medicine Shop"**
 
 ---
