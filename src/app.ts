@@ -19,7 +19,7 @@ app.use("/api/payment/webhook", express.raw({ type: "application/json" }), Payme
 
 
 // CORS
-app.use(cors({ origin: process.env.FRONTEND_URL!, credentials: true }));
+app.use(cors({ origin: [process.env.FRONTEND_URL!, "http://localhost:3000"], credentials: true }));
 
 // Better Auth
 app.all("/api/auth/*splat", toNodeHandler(auth));

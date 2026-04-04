@@ -121,7 +121,7 @@ model Service {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  provider      User             @relation(fields: [providerId], references: [id])
+  provider      User             @relation(fields: [providerId], references: [id],onDelete: Cascade)
   category      ServiceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   bookings      Booking[]
@@ -143,8 +143,8 @@ model Booking {
   paymentStatus   PaymentStatus @default(PENDING)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  customer        User          @relation("CustomerBookings", fields: [customerId], references: [id])
-  service         Service       @relation(fields: [serviceId], references: [id])
+  customer        User          @relation("CustomerBookings", fields: [customerId], references: [id],onDelete: Cascade)
+  service         Service       @relation(fields: [serviceId], references: [id],onDelete: Cascade)
   payment         Payment?
 
   @@index([customerId])
@@ -172,8 +172,8 @@ model Review {
   comment     String
   createdAt   DateTime  @default(now())
 
-  customer    User      @relation(fields: [customerId], references: [id])
-  service     Service   @relation(fields: [serviceId], references: [id])
+  customer    User      @relation(fields: [customerId], references: [id],onDelete: Cascade)
+  service     Service   @relation(fields: [serviceId], references: [id],onDelete: Cascade)
 
   @@index([customerId])
   @@index([serviceId])
