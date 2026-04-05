@@ -5,18 +5,25 @@ import { stripeWebhook } from "./payment.webhook";
 const createPayment = async (req: Request, res: Response) => {
   try {
     const { bookingId, method } = req.body;
-    if (!bookingId || !method) throw new Error("bookingId and method are required");
+    if (!bookingId || !method)
+      throw new Error("bookingId and method are required");
 
     let result;
     if (method === "CASH_ON_DELIVERY") {
-      result = await PaymentService.createCashOnDeliveryPayment(req.user!.id, bookingId);
+      result = await PaymentService.createCashOnDeliveryPayment(
+        req.user!.id,
+        bookingId,
+      );
       return res.status(201).json({
         success: true,
         message: "Cash on Delivery payment created successfully",
         data: result,
       });
     } else if (method === "STRIPE") {
-      result = await PaymentService.createStripeCheckout(req.user!.id, bookingId);
+      result = await PaymentService.createStripeCheckout(
+        req.user!.id,
+        bookingId,
+      );
       return res.status(201).json({
         success: true,
         message: "Stripe checkout session created successfully",
