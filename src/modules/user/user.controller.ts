@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
 
@@ -60,7 +59,7 @@ const updateMe = async (req: any, res: Response) => {
 // =====================
 // ADMIN
 // =====================
- const getAllUsers = async (_req: Request, res: Response) => {
+const getAllUsers = async (_req: Request, res: Response) => {
   try {
     const users = await UserService.getAllUsersFromDB();
 
@@ -83,7 +82,7 @@ const banUser = async (req: Request, res: Response) => {
   try {
     const user = await UserService.banUserInDB(
       req.params.id as string,
-      req.body.isBanned
+      req.body.isBanned,
     );
 
     if (!user) {
@@ -108,11 +107,11 @@ const banUser = async (req: Request, res: Response) => {
   }
 };
 
- const changeRole = async (req: Request, res: Response) => {
+const changeRole = async (req: Request, res: Response) => {
   try {
     const user = await UserService.changeUserRoleInDB(
       req.params.id as string,
-      req.body.role
+      req.body.role,
     );
 
     if (!user) {
@@ -137,14 +136,10 @@ const banUser = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
 export const userController = {
-  getMe ,
+  getMe,
   updateMe,
   getAllUsers,
   banUser,
   changeRole,
 };
-
