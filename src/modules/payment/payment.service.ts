@@ -13,12 +13,16 @@ const getBooking = async (customerId: string, bookingId: string) => {
   });
 
   if (!booking) throw new Error("Booking not found");
-  if (booking.payment) throw new Error("Payment already exists for this booking");
+  if (booking.payment)
+    throw new Error("Payment already exists for this booking");
 
   return booking;
 };
 
-const createCashOnDeliveryPayment = async (customerId: string, bookingId: string) => {
+const createCashOnDeliveryPayment = async (
+  customerId: string,
+  bookingId: string,
+) => {
   const booking = await getBooking(customerId, bookingId);
 
   const payment = await prisma.payment.create({
