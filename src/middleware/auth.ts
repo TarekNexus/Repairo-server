@@ -30,7 +30,9 @@ const auth = (...allowedRoles: UserRole[]) => {
       });
 
       if (!session) {
-        return res.status(401).json({ success: false, message: "Unauthorized" });
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
       }
 
       // 2️⃣ Fetch user from database
@@ -40,7 +42,9 @@ const auth = (...allowedRoles: UserRole[]) => {
       });
 
       if (!dbUser) {
-        return res.status(404).json({ success: false, message: "User not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       }
 
       // 3️⃣ Attach user info to request
@@ -52,12 +56,22 @@ const auth = (...allowedRoles: UserRole[]) => {
       };
 
       // 4️⃣ Block banned users
-  if (dbUser.isBanned && dbUser.role !== UserRole.ADMIN) {
-  return res.status(403).json({ success: false, message: "Your account has been banned" });
-}
+      if (dbUser.isBanned && dbUser.role !== UserRole.ADMIN) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Your account has been banned" });
+      }
       // 5️⃣ Role-based access control
-      if (allowedRoles.length > 0 && !allowedRoles.includes(dbUser.role as UserRole)) {
-        return res.status(403).json({ success: false, message: "Forbidden: insufficient permissions" });
+      if (
+        allowedRoles.length > 0 &&
+        !allowedRoles.includes(dbUser.role as UserRole)
+      ) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: "Forbidden: insufficient permissions",
+          });
       }
 
       next();
