@@ -5,23 +5,25 @@ import "dotenv/config";
 import { oAuthProxy } from "better-auth/plugins";
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
-    provider: "postgresql", 
+    provider: "postgresql",
   }),
-secret: process.env.BETTER_AUTH_SECRET!,
-  trustedOrigins: [process.env.FRONTEND_URL!, "http://localhost:3000",process.env.BETTER_AUTH_URL!],
+  secret: process.env.BETTER_AUTH_SECRET!,
+  trustedOrigins: [
+    process.env.FRONTEND_URL!,
+    "http://localhost:3000",
+    process.env.BETTER_AUTH_URL!,
+  ],
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false 
+    autoSignIn: false,
   },
-   user: {
+  user: {
     additionalFields: {
       role: {
         type: "string",
         defaultValue: "CUSTOMER",
         required: false,
       },
-     
-     
     },
   },
   socialProviders: {
@@ -32,11 +34,11 @@ secret: process.env.BETTER_AUTH_SECRET!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`,
       account: {
-        skipStateCookieCheck: true
-      }
+        skipStateCookieCheck: true,
+      },
     },
   },
-advanced: {
+  advanced: {
     cookies: {
       state: {
         attributes: {
@@ -46,7 +48,5 @@ advanced: {
       },
     },
   },
-  plugins: [
-    
-      oAuthProxy()]
+  plugins: [oAuthProxy()],
 });
