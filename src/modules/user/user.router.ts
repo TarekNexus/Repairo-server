@@ -18,5 +18,4 @@ router.get("/", auth(UserRole.ADMIN), userController.getAllUsers);
 router.patch("/:id/ban", auth(UserRole.ADMIN), userController.banUser);
 router.patch("/:id/role", auth(UserRole.ADMIN), userController.changeRole);
 
-
 export const userRouter: Router = router;
