@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { ServiceService } from "./Service.service";
 
-
 // ===== PUBLIC =====
 const getAllServices = async (_req: Request, res: Response) => {
   try {
@@ -116,10 +115,7 @@ const updateService = async (req: Request, res: Response) => {
       });
     }
 
-    const service = await ServiceService.updateService(
-      serviceId,
-      req.body
-    );
+    const service = await ServiceService.updateService(serviceId, req.body);
 
     res.status(200).json({
       success: true,
