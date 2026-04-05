@@ -5,13 +5,17 @@ import { BookingController } from "./booking.controller"; // renamed
 const router = Router();
 
 // Fetch all bookings (for provider or admin)
-router.get("/", auth(UserRole.PROVIDER, UserRole.ADMIN), BookingController.getBookings);
+router.get(
+  "/",
+  auth(UserRole.PROVIDER, UserRole.ADMIN),
+  BookingController.getBookings,
+);
 
 // Update booking status (provider, admin, or customer)
 router.patch(
   "/:id",
   auth(UserRole.PROVIDER, UserRole.ADMIN, UserRole.CUSTOMER),
-  BookingController.updateBookingStatus
+  BookingController.updateBookingStatus,
 );
 
 export const BookingRouter: Router = router; // renamed
