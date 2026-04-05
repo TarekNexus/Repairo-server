@@ -14,7 +14,10 @@ const getAllUsers = async (_req: Request, res: Response) => {
 const getUserById = async (req: Request, res: Response) => {
   try {
     const user = await AdminService.getUserById(req.params.id as string);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     res.status(200).json({ success: true, data: user });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -23,8 +26,13 @@ const getUserById = async (req: Request, res: Response) => {
 
 const updateUserRole = async (req: Request, res: Response) => {
   try {
-    const user = await AdminService.updateUserRole(req.params.id as string, req.body);
-    res.status(200).json({ success: true, message: "User role updated", data: user });
+    const user = await AdminService.updateUserRole(
+      req.params.id as string,
+      req.body,
+    );
+    res
+      .status(200)
+      .json({ success: true, message: "User role updated", data: user });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -35,12 +43,16 @@ const toggleUserBan = async (req: Request, res: Response) => {
     const user = await AdminService.toggleUserBan(req.params.id as string);
     res.status(200).json({
       success: true,
-      message: user.isBanned ? "User banned successfully" : "User unbanned successfully",
+      message: user.isBanned
+        ? "User banned successfully"
+        : "User unbanned successfully",
       data: user,
     });
   } catch (error: any) {
     if (error.message === "USER_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
     res.status(500).json({ success: false, message: "Internal server error" });
   }
@@ -68,7 +80,9 @@ const getAllServiceCategories = async (_req: Request, res: Response) => {
 const addServiceCategory = async (req: Request, res: Response) => {
   try {
     const category = await AdminService.addServiceCategory(req.body);
-    res.status(201).json({ success: true, message: "Category added", data: category });
+    res
+      .status(201)
+      .json({ success: true, message: "Category added", data: category });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -76,8 +90,13 @@ const addServiceCategory = async (req: Request, res: Response) => {
 
 const updateServiceCategory = async (req: Request, res: Response) => {
   try {
-    const category = await AdminService.updateServiceCategory(req.params.id as string, req.body);
-    res.status(200).json({ success: true, message: "Category updated", data: category });
+    const category = await AdminService.updateServiceCategory(
+      req.params.id as string,
+      req.body,
+    );
+    res
+      .status(200)
+      .json({ success: true, message: "Category updated", data: category });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -85,11 +104,24 @@ const updateServiceCategory = async (req: Request, res: Response) => {
 
 const deleteServiceCategory = async (req: Request, res: Response) => {
   try {
-    const category = await AdminService.deleteServiceCategory(req.params.id as string);
-    res.status(200).json({ success: true, message: "Category deleted successfully", data: category });
+    const category = await AdminService.deleteServiceCategory(
+      req.params.id as string,
+    );
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Category deleted successfully",
+        data: category,
+      });
   } catch (error: any) {
     if (error.message === "CATEGORY_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Category already deleted or not found" });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Category already deleted or not found",
+        });
     }
     res.status(500).json({ success: false, message: "Internal server error" });
   }
