@@ -28,7 +28,7 @@ const getProfile = async (customerId: string) => {
 
 const updateProfile = async (
   customerId: string,
-  payload: { name?: string; email?: string; image?: string }
+  payload: { name?: string; email?: string; image?: string },
 ) => {
   return prisma.user.update({
     where: { id: customerId },
@@ -51,7 +51,13 @@ const getBookings = async (customerId: string) => {
       service: {
         include: {
           provider: {
-            select: { id: true, name: true, email: true, role: true, image: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              image: true,
+            },
           },
           category: {
             select: { id: true, name: true },
@@ -67,14 +73,20 @@ const getBookings = async (customerId: string) => {
 const getBookingById = async (customerId: string, bookingId: string) => {
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, customerId },
-     include: {
+    include: {
       customer: {
         select: { id: true, name: true, email: true, image: true }, // customer details
       },
       service: {
         include: {
           provider: {
-            select: { id: true, name: true, email: true, role: true, image: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              image: true,
+            },
           },
           category: {
             select: { id: true, name: true },
@@ -95,7 +107,7 @@ const createBooking = async (
   date: Date,
   address: string,
   phone: string,
-  email?: string
+  email?: string,
 ) => {
   if (!items || items.length === 0)
     throw new Error("At least one service item is required");
@@ -133,7 +145,7 @@ const createBooking = async (
           payment: true,
         },
       });
-    })
+    }),
   );
 
   return bookings;
@@ -166,7 +178,7 @@ const addReview = async (
   customerId: string,
   serviceId: string,
   rating: number,
-  comment?: string
+  comment?: string,
 ) => {
   return prisma.review.create({
     data: {
