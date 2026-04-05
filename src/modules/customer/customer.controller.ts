@@ -20,10 +20,7 @@ const getProfile = async (req: Request, res: Response) => {
 
 const updateProfile = async (req: Request, res: Response) => {
   try {
-    const profile = await CustomerService.updateProfile(
-      req.user!.id,
-      req.body
-    );
+    const profile = await CustomerService.updateProfile(req.user!.id, req.body);
 
     res.status(200).json({
       success: true,
@@ -132,7 +129,7 @@ const createBooking = async (req: Request, res: Response) => {
       bookingDate,
       address,
       phone,
-      email
+      email,
     );
 
     res.status(201).json({
@@ -190,7 +187,7 @@ const addReview = async (req: Request, res: Response) => {
       req.user!.id, // customerId from authenticated user
       serviceId,
       Number(rating),
-      comment
+      comment,
     );
 
     res.status(201).json({
