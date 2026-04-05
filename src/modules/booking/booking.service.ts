@@ -23,7 +23,7 @@ const getBookings = async (userId: string) => {
 const updateBookingStatus = async (
   bookingId: string,
   status: BookingStatus,
-  user: { id: string; role: string }
+  user: { id: string; role: string },
 ) => {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
