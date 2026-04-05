@@ -3,15 +3,19 @@ import { BookingStatus } from "../../generated/prisma/enums";
 import { BookingService } from "./booking.service";
 
 // Fetch bookings for the current user (customer or provider)
-const getBookings = async (req: Request, res: Response) => {
+
+const getBookings= async (req: Request, res: Response) => {
   try {
-    const bookings = await BookingService.getBookings(req.user!.id);
+    const userId = req.user!.id;
+    const userRole = req.user!.role; // assuming your auth middleware adds role to req.user
+
+    const bookings = await BookingService.getBookings(userId, userRole);
+
     res.status(200).json({ success: true, data: bookings });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
 // Update booking status (for provider or admin)
 const updateBookingStatus = async (req: Request, res: Response) => {
   try {

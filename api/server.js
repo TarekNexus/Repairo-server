@@ -93,7 +93,11 @@ var auth = betterAuth({
     provider: "postgresql"
   }),
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [process.env.FRONTEND_URL, "http://localhost:3000", process.env.BETTER_AUTH_URL],
+  trustedOrigins: [
+    process.env.FRONTEND_URL,
+    "http://localhost:3000",
+    process.env.BETTER_AUTH_URL
+  ],
   emailAndPassword: {
     enabled: true,
     autoSignIn: false
@@ -129,9 +133,7 @@ var auth = betterAuth({
       }
     }
   },
-  plugins: [
-    oAuthProxy()
-  ]
+  plugins: [oAuthProxy()]
 });
 
 // src/app.ts
@@ -200,7 +202,8 @@ var getAllUsers2 = async (_req, res) => {
 var getUserById2 = async (req, res) => {
   try {
     const user = await AdminService.getUserById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found" });
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -208,7 +211,10 @@ var getUserById2 = async (req, res) => {
 };
 var updateUserRole2 = async (req, res) => {
   try {
-    const user = await AdminService.updateUserRole(req.params.id, req.body);
+    const user = await AdminService.updateUserRole(
+      req.params.id,
+      req.body
+    );
     res.status(200).json({ success: true, message: "User role updated", data: user });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -255,7 +261,10 @@ var addServiceCategory2 = async (req, res) => {
 };
 var updateServiceCategory2 = async (req, res) => {
   try {
-    const category = await AdminService.updateServiceCategory(req.params.id, req.body);
+    const category = await AdminService.updateServiceCategory(
+      req.params.id,
+      req.body
+    );
     res.status(200).json({ success: true, message: "Category updated", data: category });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -263,11 +272,20 @@ var updateServiceCategory2 = async (req, res) => {
 };
 var deleteServiceCategory2 = async (req, res) => {
   try {
-    const category = await AdminService.deleteServiceCategory(req.params.id);
-    res.status(200).json({ success: true, message: "Category deleted successfully", data: category });
+    const category = await AdminService.deleteServiceCategory(
+      req.params.id
+    );
+    res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+      data: category
+    });
   } catch (error) {
     if (error.message === "CATEGORY_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Category already deleted or not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Category already deleted or not found"
+      });
     }
     res.status(500).json({ success: false, message: "Internal server error" });
   }
@@ -320,7 +338,10 @@ var auth2 = (...allowedRoles) => {
         return res.status(403).json({ success: false, message: "Your account has been banned" });
       }
       if (allowedRoles.length > 0 && !allowedRoles.includes(dbUser.role)) {
-        return res.status(403).json({ success: false, message: "Forbidden: insufficient permissions" });
+        return res.status(403).json({
+          success: false,
+          message: "Forbidden: insufficient permissions"
+        });
       }
       next();
     } catch (error) {
@@ -334,14 +355,38 @@ var auth_default = auth2;
 var router = Router();
 router.get("/users", auth_default("ADMIN" /* ADMIN */), AdminController.getAllUsers);
 router.get("/users/:id", auth_default("ADMIN" /* ADMIN */), AdminController.getUserById);
-router.patch("/users/:id", auth_default("ADMIN" /* ADMIN */), AdminController.updateUserRole);
-router.patch("/users/ban/:id", auth_default("ADMIN" /* ADMIN */), AdminController.toggleUserBan);
+router.patch(
+  "/users/:id",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.updateUserRole
+);
+router.patch(
+  "/users/ban/:id",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.toggleUserBan
+);
 router.get("/services", auth_default("ADMIN" /* ADMIN */), AdminController.getAllServices);
 router.get("/bookings", auth_default("ADMIN" /* ADMIN */), AdminController.getAllBookings);
-router.get("/categories", auth_default("ADMIN" /* ADMIN */), AdminController.getAllServiceCategories);
-router.post("/categories", auth_default("ADMIN" /* ADMIN */), AdminController.addServiceCategory);
-router.put("/categories/:id", auth_default("ADMIN" /* ADMIN */), AdminController.updateServiceCategory);
-router.delete("/categories/:id", auth_default("ADMIN" /* ADMIN */), AdminController.deleteServiceCategory);
+router.get(
+  "/categories",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.getAllServiceCategories
+);
+router.post(
+  "/categories",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.addServiceCategory
+);
+router.put(
+  "/categories/:id",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.updateServiceCategory
+);
+router.delete(
+  "/categories/:id",
+  auth_default("ADMIN" /* ADMIN */),
+  AdminController.deleteServiceCategory
+);
 var AdminRouter = router;
 
 // src/modules/customer/customer.router.ts
@@ -399,7 +444,13 @@ var getBookings = async (customerId) => {
       service: {
         include: {
           provider: {
-            select: { id: true, name: true, email: true, role: true, image: true }
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              image: true
+            }
           },
           category: {
             select: { id: true, name: true }
@@ -423,7 +474,13 @@ var getBookingById = async (customerId, bookingId) => {
       service: {
         include: {
           provider: {
-            select: { id: true, name: true, email: true, role: true, image: true }
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              image: true
+            }
           },
           category: {
             select: { id: true, name: true }
@@ -539,10 +596,7 @@ var getProfile2 = async (req, res) => {
 };
 var updateProfile2 = async (req, res) => {
   try {
-    const profile = await CustomerService.updateProfile(
-      req.user.id,
-      req.body
-    );
+    const profile = await CustomerService.updateProfile(req.user.id, req.body);
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
@@ -730,11 +784,7 @@ var CustomerController = {
 
 // src/modules/customer/customer.router.ts
 var router2 = Router2();
-router2.get(
-  "/profile",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  CustomerController.getProfile
-);
+router2.get("/profile", auth_default("CUSTOMER" /* CUSTOMER */), CustomerController.getProfile);
 router2.patch(
   "/profile",
   auth_default("CUSTOMER" /* CUSTOMER */),
@@ -760,31 +810,25 @@ router2.patch(
   auth_default("CUSTOMER" /* CUSTOMER */),
   CustomerController.cancelBooking
 );
-router2.post(
-  "/reviews",
-  auth_default("CUSTOMER" /* CUSTOMER */),
-  CustomerController.addReview
-);
-router2.get(
-  "/reviews/:serviceId",
-  CustomerController.getReviewsForService
-);
+router2.post("/reviews", auth_default("CUSTOMER" /* CUSTOMER */), CustomerController.addReview);
+router2.get("/reviews/:serviceId", CustomerController.getReviewsForService);
 var CustomerRouter = router2;
 
 // src/modules/booking/booking.router.ts
 import { Router as Router3 } from "express";
 
 // src/modules/booking/booking.service.ts
-var getBookings3 = async (userId) => {
+var getBookings3 = async (userId, userRole) => {
+  const whereClause = userRole === "ADMIN" /* ADMIN */ ? {} : {
+    OR: [
+      { providerId: userId },
+      // provider sees their bookings
+      { customerId: userId }
+      // customer sees their bookings
+    ]
+  };
   return prisma.booking.findMany({
-    where: {
-      OR: [
-        { providerId: userId },
-        // provider sees their bookings
-        { customerId: userId }
-        // customer sees their bookings
-      ]
-    },
+    where: whereClause,
     include: {
       service: true,
       customer: true,
@@ -835,7 +879,9 @@ var BookingService = {
 // src/modules/booking/booking.controller.ts
 var getBookings4 = async (req, res) => {
   try {
-    const bookings = await BookingService.getBookings(req.user.id);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const bookings = await BookingService.getBookings(userId, userRole);
     res.status(200).json({ success: true, data: bookings });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -873,7 +919,11 @@ var BookingController = {
 
 // src/modules/booking/booking.router.ts
 var router3 = Router3();
-router3.get("/", auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */), BookingController.getBookings);
+router3.get(
+  "/",
+  auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */),
+  BookingController.getBookings
+);
 router3.patch(
   "/:id",
   auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */, "CUSTOMER" /* CUSTOMER */),
@@ -1295,10 +1345,7 @@ var updateService2 = async (req, res) => {
         message: "Invalid service ID"
       });
     }
-    const service = await ServiceService.updateService(
-      serviceId,
-      req.body
-    );
+    const service = await ServiceService.updateService(serviceId, req.body);
     res.status(200).json({
       success: true,
       message: "Service updated successfully",
@@ -1571,11 +1618,31 @@ var ProviderController = {
 
 // src/modules/provider/provider.router.ts
 var router7 = Router7();
-router7.get("/bookings", auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */), ProviderController.getBookings);
-router7.post("/services", auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */), ProviderController.addService);
-router7.put("/services/:id", auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */), ProviderController.updateService);
-router7.delete("/services/:id", auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */), ProviderController.deleteService);
-router7.get("/my-services", auth_default("PROVIDER" /* PROVIDER */), ProviderController.getMyServices);
+router7.get(
+  "/bookings",
+  auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */),
+  ProviderController.getBookings
+);
+router7.post(
+  "/services",
+  auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */),
+  ProviderController.addService
+);
+router7.put(
+  "/services/:id",
+  auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */),
+  ProviderController.updateService
+);
+router7.delete(
+  "/services/:id",
+  auth_default("PROVIDER" /* PROVIDER */, "ADMIN" /* ADMIN */),
+  ProviderController.deleteService
+);
+router7.get(
+  "/my-services",
+  auth_default("PROVIDER" /* PROVIDER */),
+  ProviderController.getMyServices
+);
 var ProviderRouter = router7;
 
 // src/modules/payment/payment.router.ts
@@ -1592,7 +1659,8 @@ var getBooking = async (customerId, bookingId) => {
     include: { service: true, payment: true }
   });
   if (!booking) throw new Error("Booking not found");
-  if (booking.payment) throw new Error("Payment already exists for this booking");
+  if (booking.payment)
+    throw new Error("Payment already exists for this booking");
   return booking;
 };
 var createCashOnDeliveryPayment = async (customerId, bookingId) => {
@@ -1668,14 +1736,21 @@ var PaymentService = {
 
 // src/modules/payment/payment.webhook.ts
 import Stripe2 from "stripe";
-var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" });
+var stripe2 = new Stripe2(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2026-03-25.dahlia"
+});
 var stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   if (!sig) return res.status(400).send("Missing stripe-signature");
-  if (!Buffer.isBuffer(req.body)) return res.status(400).send("Raw body required");
+  if (!Buffer.isBuffer(req.body))
+    return res.status(400).send("Raw body required");
   let event;
   try {
-    event = stripe2.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe2.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     console.error("Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -1687,13 +1762,18 @@ var stripeWebhook = async (req, res) => {
     if (paymentId && bookingId) {
       await prisma.payment.update({
         where: { id: paymentId },
-        data: { status: PaymentStatus.PAID, transactionId: String(session.payment_intent) }
+        data: {
+          status: PaymentStatus.PAID,
+          transactionId: String(session.payment_intent)
+        }
       });
       await prisma.booking.update({
         where: { id: bookingId },
         data: { paymentStatus: PaymentStatus.PAID }
       });
-      console.log(`\u2705 Payment ${paymentId} and Booking ${bookingId} updated to PAID`);
+      console.log(
+        `\u2705 Payment ${paymentId} and Booking ${bookingId} updated to PAID`
+      );
     }
   }
   res.status(200).json({ received: true });
@@ -1703,17 +1783,24 @@ var stripeWebhook = async (req, res) => {
 var createPayment = async (req, res) => {
   try {
     const { bookingId, method } = req.body;
-    if (!bookingId || !method) throw new Error("bookingId and method are required");
+    if (!bookingId || !method)
+      throw new Error("bookingId and method are required");
     let result;
     if (method === "CASH_ON_DELIVERY") {
-      result = await PaymentService.createCashOnDeliveryPayment(req.user.id, bookingId);
+      result = await PaymentService.createCashOnDeliveryPayment(
+        req.user.id,
+        bookingId
+      );
       return res.status(201).json({
         success: true,
         message: "Cash on Delivery payment created successfully",
         data: result
       });
     } else if (method === "STRIPE") {
-      result = await PaymentService.createStripeCheckout(req.user.id, bookingId);
+      result = await PaymentService.createStripeCheckout(
+        req.user.id,
+        bookingId
+      );
       return res.status(201).json({
         success: true,
         message: "Stripe checkout session created successfully",
@@ -1751,11 +1838,27 @@ var PaymentController = {
 
 // src/modules/payment/payment.router.ts
 var PaymentRouter = express.Router();
-PaymentRouter.post("/create", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.createPayment);
-PaymentRouter.get("/", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getMyPayments);
-PaymentRouter.get("/:id", auth_default("CUSTOMER" /* CUSTOMER */), PaymentController.getPaymentById);
+PaymentRouter.post(
+  "/create",
+  auth_default("CUSTOMER" /* CUSTOMER */),
+  PaymentController.createPayment
+);
+PaymentRouter.get(
+  "/",
+  auth_default("CUSTOMER" /* CUSTOMER */),
+  PaymentController.getMyPayments
+);
+PaymentRouter.get(
+  "/:id",
+  auth_default("CUSTOMER" /* CUSTOMER */),
+  PaymentController.getPaymentById
+);
 var PaymentWebhookRouter = express.Router();
-PaymentWebhookRouter.post("/stripe", express.raw({ type: "application/json" }), PaymentController.stripeWebhook);
+PaymentWebhookRouter.post(
+  "/stripe",
+  express.raw({ type: "application/json" }),
+  PaymentController.stripeWebhook
+);
 
 // src/app.ts
 var app = express2();

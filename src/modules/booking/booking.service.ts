@@ -1,15 +1,21 @@
 import { BookingStatus } from "../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
+import { UserRole } from "../../middleware/auth";
 
 // Get all bookings for the provider's services
-const getBookings = async (userId: string) => {
+const getBookings = async (userId: string, userRole: string) => {
+  const whereClause =
+    userRole === UserRole.ADMIN
+      ? {} // Admin sees all bookings
+      : {
+          OR: [
+            { providerId: userId }, // provider sees their bookings
+            { customerId: userId }, // customer sees their bookings
+          ],
+        };
+
   return prisma.booking.findMany({
-    where: {
-      OR: [
-        { providerId: userId }, // provider sees their bookings
-        { customerId: userId }, // customer sees their bookings
-      ],
-    },
+    where: whereClause,
     include: {
       service: true,
       customer: true,
