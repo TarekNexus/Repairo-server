@@ -36,7 +36,11 @@ const addService = async (providerId: string, data: any) => {
   }
 };
 
-const updateService = async (providerId: string, serviceId: string, data: any) => {
+const updateService = async (
+  providerId: string,
+  serviceId: string,
+  data: any,
+) => {
   try {
     const result = await prisma.service.updateMany({
       where: { id: serviceId, providerId },
