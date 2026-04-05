@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { BookingStatus } from "../../generated/prisma/enums";
 import { BookingService } from "./booking.service";
 
-
 // Fetch bookings for the current user (customer or provider)
 const getBookings = async (req: Request, res: Response) => {
   try {
@@ -30,7 +29,7 @@ const updateBookingStatus = async (req: Request, res: Response) => {
     const booking = await BookingService.updateBookingStatus(
       id as string,
       status as BookingStatus,
-      user
+      user,
     );
 
     res.status(200).json({
