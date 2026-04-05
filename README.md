@@ -1,132 +1,139 @@
-# PharmaPlus 
-**"Your Trusted Online Medicine Shop"**
+# Repairoe – Home Service Booking Platform (Backend)
 
----
 
 ## Project Overview
-PharmaPlus is a full-stack e-commerce web application designed for purchasing over-the-counter (OTC) medicines. Customers can browse medicines, add them to their cart, and place orders. Sellers manage their medicine inventory and fulfill orders, while admins oversee the platform and manage all users and listings.
+Repairo is a full-stack home service booking platform where customers can find and book local service providers such as electricians, plumbers, AC mechanics, cleaners, and WiFi technicians.  
+
+- Customers can browse services, book providers, pay online via  **Stripe**, and track their bookings.  
+- Providers can manage their services and bookings through their dashboard.  
+- Admins can oversee the platform.
 
 ---
 
 ## Roles & Permissions
 
-| Role     | Description                     | Key Permissions                                           |
-|---------|---------------------------------|----------------------------------------------------------|
-| Customer | Users who purchase medicines    | Browse, add to cart, place orders, track status, leave reviews |
-| Seller   | Medicine vendors / pharmacies   | Manage inventory, view orders, update order status      |
-| Admin    | Platform moderators             | Manage all inventory, users, oversee orders            |
-
-
+| Role              | Description                     | Key Permissions                          |
+|------------------|---------------------------------|------------------------------------------|
+| Customer          | Users booking services          | Browse, book, pay, track, review         |
+| Service Provider  | Providers offering services     | Manage services, view bookings, update status |
+| Admin             | Platform overseer               | Manage users, services, categories, bookings |
 
 ---
 
 ## Tech Stack
 
-- **Backend:** Node.js, Express.js, PostgresSQL,Prisma,NeonDB,Better Auth
+- **Frontend:** Next.js, Tailwind CSS, TypeScript  
+- **Backend:** Node.js, Express.js ,TypeScript  
+- **Database:** PostgreSQL, Prisma ORM  
+- **Authentication:** JWT / BetterAuth  
+- **Payment:** SSLCommerz, Stripe  
+- **Deployment:** Vercel / Render / Railway  
 
 ---
 
-tarek
+## Features
+
+### Public Features
+- Browse all services  
+- Search and filter by category, price, location  
+- View service details  
+
+### Customer Features
+- Register/Login  
+- Book services  
+- Online payment  
+- Track booking status  
+- Booking history  
+- Manage profile  
+
+### Provider Features
+- Register/Login  
+- Add/Edit/Remove services  
+- Manage stock/availability  
+- View incoming bookings  
+- Update booking status  
+
+### Admin Features
+- Manage all users  
+- Ban/unban providers  
+- Manage service categories  
+- View all bookings  
+
+---
 
 ## Pages & Routes
 
-### Public Routes
-| Route         | Page             | Description                  |
-|---------------|-----------------|------------------------------|
-| `/`           | Home            | Hero section, categories, featured medicines |
-| `/shop`       | Shop            | Browse all medicines with filters |
-| `/shop/:id`   | Medicine Details| View detailed info, add to cart |
-| `/login`      | Login           | Login form                  |
-| `/register`   | Register        | Registration form           |
+### Public
+- `/` - Home  
+- `/services` - Browse services  
+- `/login` - Login  
+- `/register` - Register  
 
-### Customer Routes (Private)
-| Route         | Page             | Description                  |
-|---------------|-----------------|------------------------------|
-| `/cart`       | Cart             | View cart items             |
-| `/checkout`   | Checkout         | Shipping address            |
-| `/orders`     | My Orders        | Order history               |
-| `/orders/:id` | Order Details    | View items, status          |
-| `/profile`    | Profile          | Edit user info              |
+### Customer
+- `/checkout` - Booking & payment  
+- `/profile` - Manage profile  
 
-### Seller Routes (Private)
-| Route                 | Page       | Description                 |
-|-----------------------|-----------|-----------------------------|
-| `/seller/dashboard`   | Dashboard | Orders overview, stats      |
-| `/seller/medicines`   | Inventory | Manage medicines            |
-| `/seller/orders`      | Orders    | Update order status         |
+### Provider
+- `/provider/dashboard`  
+- `/provider/services`  
+- `/provider/bookings`  
 
-### Admin Routes (Private)
-| Route                  | Page       | Description                |
-|------------------------|-----------|----------------------------|
-| `/admin`               | Dashboard | Platform statistics         |
-| `/admin/users`         | Users     | Manage users               |
-| `/admin/orders`        | Orders    | View all orders            |
-| `/admin/categories`    | Categories| Manage categories          |
+### Admin
+- `/admin`  
+- `/admin/users`  
+- `/admin/categories`  
+- `/admin/bookings`  
 
 ---
 
 ## Database Tables
-- **Users:** Store user information and authentication details
-- **Categories:** Medicine categories
-- **Medicines:** Product inventory (linked to seller)
-- **Orders:** Customer orders with items and status
-- **Reviews:** Customer reviews for medicines
 
-
+- **users:** `id, name, email, password, role, createdAt`  
+- **serviceCategories:** `id, name, description`  
+- **services:** `id, title, description, categoryId, price, image, providerId, availability, createdAt`  
+- **bookings:** `id, customerId, serviceId, providerId, date, address, phone, paymentStatus, bookingStatus`  
+- **reviews:** `id, serviceId, customerId, rating, comment, createdAt`  
+- **payments:** `id, bookingId, amount, paymentMethod, status, transactionId`  
 
 ---
 
 ## API Endpoints
 
 ### Authentication
-| Method | Endpoint             | Description           |
-|--------|---------------------|---------------------|
-| POST   | `/api/auth/register` | Register new user   |
-| POST   | `/api/auth/login`    | Login user          |
-| GET    | `/api/auth/me`       | Get current user    |
+- `POST /api/auth/register`  
+- `POST /api/auth/login`  
+- `GET /api/auth/me`  
 
-### Medicines (Public)
-| Method | Endpoint             | Description                  |
-|--------|---------------------|------------------------------|
-| GET    | `/api/medicines`    | Get all medicines with filters |
-| GET    | `/api/medicines/:id`| Get medicine details         |
-| GET    | `/api/categories`   | Get all categories           |
+### Services
+- `GET /api/services`  
+- `GET /api/services/:id`  
+- `GET /api/categories`  
 
-### Orders
-| Method | Endpoint             | Description                  |
-|--------|---------------------|------------------------------|
-| POST   | `/api/orders`        | Create new order             |
-| GET    | `/api/orders`        | Get user's orders            |
-| GET    | `/api/orders/:id`    | Get order details            |
+### Bookings
+- `POST /api/bookings`  
+- `GET /api/bookings` (user-specific)  
+- `GET /api/bookings/:id`  
 
-### Seller Management
-| Method | Endpoint                     | Description             |
-|--------|------------------------------|------------------------|
-| POST   | `/api/seller/medicines`      | Add medicine           |
-| PUT    | `/api/seller/medicines/:id`  | Update medicine        |
-| DELETE | `/api/seller/medicines/:id`  | Remove medicine        |
-| GET    | `/api/seller/orders`          | Get seller's orders    |
-| PATCH  | `/api/seller/orders/:id`      | Update order status    |
+### Provider Management
+- `POST /api/provider/services`  
+- `PUT /api/provider/services/:id`  
+- `DELETE /api/provider/services/:id`  
+- `GET /api/provider/bookings`  
+- `PATCH /api/provider/bookings/:id`  
 
 ### Admin
-| Method | Endpoint                     | Description             |
-|--------|------------------------------|------------------------|
-| GET    | `/api/admin/users`           | Get all users           |
-| PATCH  | `/api/admin/users/:id`       | Update user status      |
+- `GET /api/admin/users`  
+- `PATCH /api/admin/users/:id`  
+- `GET /api/admin/services`  
+- `PATCH /api/admin/services/:id`  
+- `GET /api/admin/bookings`  
 
 ---
 
-## Installation & Setup
+## Setup Instructions
 
+### 1. Clone the repository
 ```bash
-# Clone the repository
-git clone <https://github.com/TarekNexus/PharmaPlus-Servert>
-cd PharmaPlus-Server
-
-# Install dependencies
-npm install
-
-#create a .env 
-them follow .example.env
-# Run the development server
-npm run dev
+git clone https://github.com/TarekNexus/Repairo-server
+cd Repairo-server
+create .env and follow example.env
